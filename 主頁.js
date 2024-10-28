@@ -360,22 +360,34 @@ const firebaseConfig = {
                                 const storageRef = storage.ref(`avatars/${user.uid}_${Date.now()}`);
                                 
                                 // 上傳文件
-                                await storageRef.put(file);
-                                
-                                // 獲取下載URL
-                                const downloadURL = await storageRef.getDownloadURL();
-                                
-                                // 更新用戶文檔
-                                await db.collection('users').doc(user.displayName).update({
-                                    avatarUrl: downloadURL
-                                });
-                                
-                                // 更新頭像顯示
-                                document.getElementById('userAvatar').innerHTML = `
-                                    <img src="${downloadURL}" alt="用戶頭像" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-                                `;
-                                
-                                showNotification("頭像上傳成功！");
+                                const uploadTask = storageRef.put(file);
+
+                                // 監聽上傳過程
+                                uploadTask.on('state_changed', 
+                                    (snapshot) => {
+                                        // 可以在這裡顯示上傳進度
+                                    }, 
+                                    (error) => {
+                                        console.error("頭像上傳錯誤：", error);
+                                        showNotification("頭像上傳失敗，請稍後再試。");
+                                    }, 
+                                    async () => {
+                                        // 獲取下載URL
+                                        const downloadURL = await storageRef.getDownloadURL();
+                                        
+                                        // 更新用戶文檔
+                                        await db.collection('users').doc(user.displayName).update({
+                                            avatarUrl: downloadURL
+                                        });
+                                        
+                                        // 更新頭像顯示
+                                        document.getElementById('userAvatar').innerHTML = `
+                                            <img src="${downloadURL}" alt="用戶頭像" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                                        `;
+                                        
+                                        showNotification("頭像上傳成功！");
+                                    }
+                                );
                             } catch (error) {
                                 console.error("頭像上傳錯誤：", error);
                                 showNotification("頭像上傳失敗，請稍後再試。");
